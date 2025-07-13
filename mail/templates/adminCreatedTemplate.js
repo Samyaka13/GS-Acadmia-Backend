@@ -88,7 +88,7 @@ const adminCreatedTemplate = (name) => {
 
       <!-- Footer -->
       <div class="support">
-        <p>If you have any questions or need assistance, please feel free to reach out to us at <a href="mailto:gsacademia5404@gmail.com">Support</a>. We are here to help!</p>
+        <p>If you have any questions or need assistance, please feel free to reach out to us at <a href="mailto:samyakajmera308@gmail.com">Support</a>. We are here to help!</p>
       </div>
     </div>
   </body>

@@ -25,5 +25,4 @@
 The Website is live at ( on Vercel ) - [GS Acdemia](https://gsacademia-parth-lahotis-projects.vercel.app/)
 
 - Version - 1.0.0
-- License: parth5404
-- Author: Parth Lahoti
+
