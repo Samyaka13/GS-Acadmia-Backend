@@ -1,17 +1,17 @@
-const OTP = require('../models/OTP');
-const User = require('../models/User');
-const Profile = require('../models/Profile');
-const ErrorResponse = require('../utils/ErrorResponse');
-const bcrypt = require('bcrypt');
-const otpGenerator = require('otp-generator');
-const emailSender = require('../utils/emailSender');
-const passwordUpdateTemplate = require('../mail/templates/passwordUpdateTemplate');
-const crypto = require('crypto');
-const clgDev = require('../utils/clgDev');
-const jwt = require('jsonwebtoken');
-const accountCreationTemplate = require('../mail/templates/accountCreationTemplate');
-const adminCreatedTemplate = require('../mail/templates/adminCreatedTemplate');
-const dotenv=require("dotenv").config();
+const OTP = require("../models/OTP");
+const User = require("../models/User");
+const Profile = require("../models/Profile");
+const ErrorResponse = require("../utils/ErrorResponse");
+const bcrypt = require("bcrypt");
+const otpGenerator = require("otp-generator");
+const emailSender = require("../utils/emailSender");
+const passwordUpdateTemplate = require("../mail/templates/passwordUpdateTemplate");
+const crypto = require("crypto");
+const clgDev = require("../utils/clgDev");
+const jwt = require("jsonwebtoken");
+const accountCreationTemplate = require("../mail/templates/accountCreationTemplate");
+const adminCreatedTemplate = require("../mail/templates/adminCreatedTemplate");
+const dotenv = require("dotenv").config();
 
 // @desc      Send OTP for email verification
 // @route     POST /api/v1/auth/sendotp
@@ -22,7 +22,7 @@ exports.sendOtp = async (req, res, next) => {
 
     // Check if user is already present
     if (await User.findOne({ email })) {
-      return next(new ErrorResponse('User is already registered', 401));
+      return next(new ErrorResponse("User is already registered", 401));
     }
 
     // Generate OTP which is not present in database
@@ -31,7 +31,7 @@ exports.sendOtp = async (req, res, next) => {
       lowerCaseAlphabets: false,
       specialChars: false,
     };
-    let otp = '';
+    let otp = "";
     let user;
 
     do {
@@ -44,10 +44,10 @@ exports.sendOtp = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: 'OTP sent successfully',
+      data: "OTP sent successfully",
     });
   } catch (err) {
-    next(new ErrorResponse('Failed to send otp. Please try again', 500));
+    next(new ErrorResponse("Failed to send otp. Please try again", 500));
   }
 };
 
@@ -56,37 +56,44 @@ exports.sendOtp = async (req, res, next) => {
 // @access    Public // VERIFIED
 exports.signup = async (req, res, next) => {
   try {
-    let { firstName, lastName, email, password, role, contactNumber, otp } = req.body;
+    let { firstName, lastName, email, password, role, contactNumber, otp } =
+      req.body;
 
     role = role.charAt(0).toUpperCase() + role.slice(1);
 
     if (!(firstName && lastName && email && password && role && otp)) {
-      return next(new ErrorResponse('Some fields are missing', 403));
+      return next(new ErrorResponse("Some fields are missing", 403));
     }
 
     // Find the most recent OTP for the email
-    const recentOtp = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
+    const recentOtp = await OTP.find({ email })
+      .sort({ createdAt: -1 })
+      .limit(1);
 
     if (recentOtp.length === 0 || otp !== recentOtp[0].otp) {
       // OTP not found or Database Otp not match with given otp for this email'
-      return next(new ErrorResponse('OTP is not valid. Please try again.', 400));
+      return next(
+        new ErrorResponse("OTP is not valid. Please try again.", 400)
+      );
     }
 
     // check if user already exists
     if (await User.findOne({ email })) {
-      return next(new ErrorResponse('User already exist. Please sign in to continue', 400));
+      return next(
+        new ErrorResponse("User already exist. Please sign in to continue", 400)
+      );
     }
 
     // check if role is not admin
-    if (role === 'Admin') {
-      return next(new ErrorResponse('User not authorized', 403));
+    if (role === "Admin") {
+      return next(new ErrorResponse("User not authorized", 403));
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // LATER  - what is approved
-    let approved = role === 'Instructor' ? false : true;
+    let approved = role === "Instructor" ? false : true;
 
     const profile = await Profile.create({});
 
@@ -102,11 +109,15 @@ exports.signup = async (req, res, next) => {
     });
 
     // send a notification to user for account creation
-    await emailSender(email, `Account created successfully for ${firstName} ${lastName}`, accountCreationTemplate(firstName + ' ' + lastName));
+    await emailSender(
+      email,
+      `Account created successfully for ${firstName} ${lastName}`,
+      accountCreationTemplate(firstName + " " + lastName)
+    );
 
     sendTokenResponse(res, user, 201);
   } catch (err) {
-    next(new ErrorResponse('Failed to signUp user. Please try again', 500));
+    next(new ErrorResponse("Failed to signUp user. Please try again", 500));
   }
 };
 
@@ -118,23 +129,23 @@ exports.login = async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return next(new ErrorResponse('Please fill an email and password', 400));
+      return next(new ErrorResponse("Please fill an email and password", 400));
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
-      return next(new ErrorResponse('Invalid credentials', 400));
+      return next(new ErrorResponse("Invalid credentials", 400));
     }
 
     if (!(await bcrypt.compare(password, user.password))) {
-      return next(new ErrorResponse('Invalid credentials', 400));
+      return next(new ErrorResponse("Invalid credentials", 400));
     }
 
     sendTokenResponse(res, user, 200);
   } catch (err) {
     console.log(err);
-    next(new ErrorResponse('Login failed. Please try again', 500));
+    next(new ErrorResponse("Login failed. Please try again", 500));
   }
 };
 
@@ -144,7 +155,7 @@ exports.login = async (req, res, next) => {
 exports.logOut = async (req, res, next) => {
   try {
     res
-      .cookie('token', 'none', {
+      .cookie("token", "none", {
         expires: new Date(Date.now() + 10 * 1000),
         httpOnly: true,
       })
@@ -154,7 +165,7 @@ exports.logOut = async (req, res, next) => {
         data: {},
       });
   } catch (err) {
-    next(new ErrorResponse('Failed to log out. Please try again', 500));
+    next(new ErrorResponse("Failed to log out. Please try again", 500));
   }
 };
 
@@ -169,7 +180,12 @@ exports.getMe = async (req, res, next) => {
       data: user,
     });
   } catch (err) {
-    next(new ErrorResponse('Failed to fetching current user details. Please try again', 500));
+    next(
+      new ErrorResponse(
+        "Failed to fetching current user details. Please try again",
+        500
+      )
+    );
   }
 };
 
@@ -178,29 +194,37 @@ exports.getMe = async (req, res, next) => {
 // @access    Private  // VERIFIED
 exports.changePassword = async (req, res, next) => {
   try {
-    let user = await User.findById(req.user.id).select('+password');
+    let user = await User.findById(req.user.id).select("+password");
     const { oldPassword, newPassword } = req.body;
 
     if (!(await bcrypt.compare(oldPassword, user.password))) {
-      return next(new ErrorResponse('The password is incorrect', 401));
+      return next(new ErrorResponse("The password is incorrect", 401));
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user = await User.findByIdAndUpdate(user._id, { password: hashedPassword }, { new: true });
+    user = await User.findByIdAndUpdate(
+      user._id,
+      { password: hashedPassword },
+      { new: true }
+    );
 
     // Send password change email to user
     try {
-      const response = await emailSender(user.email, `Password updated successfully for ${user.firstName} ${user.lastName}`, passwordUpdateTemplate(user.email, `${user.firstName} ${user.lastName}`));
+      const response = await emailSender(
+        user.email,
+        `Password updated successfully for ${user.firstName} ${user.lastName}`,
+        passwordUpdateTemplate(user.email, `${user.firstName} ${user.lastName}`)
+      );
     } catch (err) {
-      return next(new ErrorResponse('Error occurred while sending email', 500));
+      return next(new ErrorResponse("Error occurred while sending email", 500));
     }
 
     res.status(200).json({
       success: true,
-      message: 'Password updated successfully',
+      message: "Password updated successfully",
     });
   } catch (err) {
-    next(new ErrorResponse('Failed to change password. Please try again', 500));
+    next(new ErrorResponse("Failed to change password. Please try again", 500));
   }
 };
 
@@ -213,11 +237,16 @@ exports.forgotPassword = async (req, res, next) => {
 
     let user = await User.findOne({ email });
     if (!user) {
-      return next(new ErrorResponse('Email not found. Please enter a valid email', 400));
+      return next(
+        new ErrorResponse("Email not found. Please enter a valid email", 400)
+      );
     }
 
-    const resetToken = crypto.randomBytes(20).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
 
     user = await User.findOneAndUpdate(
       { email },
@@ -239,15 +268,22 @@ exports.forgotPassword = async (req, res, next) => {
         `
       );
     } catch (err) {
-      return next(new ErrorResponse('Failed to send reset email. Please try again', 500));
+      return next(
+        new ErrorResponse("Failed to send reset email. Please try again", 500)
+      );
     }
 
     res.status(200).json({
       success: true,
-      data: 'Reset email sent successfully. Please check your email to reset password',
+      data: "Reset email sent successfully. Please check your email to reset password",
     });
   } catch (err) {
-    next(new ErrorResponse('Failed to send reset password email. Please try again', 500));
+    next(
+      new ErrorResponse(
+        "Failed to send reset password email. Please try again",
+        500
+      )
+    );
   }
 };
 
@@ -258,22 +294,27 @@ exports.resetPassword = async (req, res, next) => {
   try {
     const { password, resetToken } = req.body;
     if (!(password && resetToken)) {
-      return next(new ErrorResponse('Some fields are missing', 404));
+      return next(new ErrorResponse("Some fields are missing", 404));
     }
 
     // Get hashed token
-    const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
 
     let user = await User.findOne({
       resetPasswordToken,
     });
 
     if (!user) {
-      return next(new ErrorResponse('Invalid request', 404));
+      return next(new ErrorResponse("Invalid request", 404));
     }
 
     if (Date.now() > user.resetPasswordExpire) {
-      return next(new ErrorResponse('Token is Expired. Please Regenerate your token', 404));
+      return next(
+        new ErrorResponse("Token is Expired. Please Regenerate your token", 404)
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -297,12 +338,17 @@ exports.resetPassword = async (req, res, next) => {
         `
       );
     } catch (err) {
-      return next(new ErrorResponse('Failed to send reset successful email. Please try again', 500));
+      return next(
+        new ErrorResponse(
+          "Failed to send reset successful email. Please try again",
+          500
+        )
+      );
     }
 
     sendTokenResponse(res, user, 200);
   } catch (err) {
-    next(new ErrorResponse('Failed to reset password. Please try again', 500));
+    next(new ErrorResponse("Failed to reset password. Please try again", 500));
   }
 };
 
@@ -312,22 +358,26 @@ exports.resetPassword = async (req, res, next) => {
 exports.createAdmin = async (req, res, next) => {
   try {
     const { firstName, lastName, email, password, contactNumber } = req.body;
-    const role = 'Admin';
+    const role = "Admin";
 
-    if (!(firstName && lastName && email && password && role && contactNumber)) {
-      return next(new ErrorResponse('Some fields are missing', 403));
+    if (
+      !(firstName && lastName && email && password && role && contactNumber)
+    ) {
+      return next(new ErrorResponse("Some fields are missing", 403));
     }
 
     // check if user already exists
     if (await User.findOne({ email })) {
-      return next(new ErrorResponse('User already exist. Please sign in to continue', 400));
+      return next(
+        new ErrorResponse("User already exist. Please sign in to continue", 400)
+      );
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // LATER  - what is approved
-    let approved = role === 'Instructor' ? false : true;
+    let approved = role === "Instructor" ? false : true;
 
     const profile = await Profile.create({ contactNumber });
 
@@ -343,14 +393,18 @@ exports.createAdmin = async (req, res, next) => {
     });
 
     // send a notification to user for account creation
-    await emailSender(email, `Admin account created successfully for ${firstName} ${lastName}`, adminCreatedTemplate(firstName + ' ' + lastName));
+    await emailSender(
+      email,
+      `Admin account created successfully for ${firstName} ${lastName}`,
+      adminCreatedTemplate(firstName + " " + lastName)
+    );
 
     res.status(201).json({
       success: true,
-      data: 'Admin account created successfully',
+      data: "Admin account created successfully",
     });
   } catch (err) {
-    next(new ErrorResponse('Failed to create admin, Please try again', 500));
+    next(new ErrorResponse("Failed to create admin, Please try again", 500));
   }
 };
 
@@ -367,15 +421,17 @@ const sendTokenResponse = (res, user, statusCode) => {
   );
 
   const options = {
-    expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000),
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+    ),
     httpOnly: true,
   };
 
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     options.secure = true;
   }
 
-  res.cookie('token', token, options).status(statusCode).json({
+  res.cookie("token", token, options).status(statusCode).json({
     success: true,
     user,
     token,

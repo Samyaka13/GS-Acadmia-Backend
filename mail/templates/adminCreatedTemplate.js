@@ -1,5 +1,5 @@
 const adminCreatedTemplate = (name) => {
-	return `
+  return `
   <!DOCTYPE html>
 	<html lang="en">
   <head>

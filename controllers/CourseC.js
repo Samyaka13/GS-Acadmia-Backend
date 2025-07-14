@@ -1,19 +1,22 @@
-const Course = require('../models/Course');
-const Category = require('../models/Category');
-const User = require('../models/User');
-const cloudUploader = require('../utils/cloudUploader');
-const clgDev = require('../utils/clgDev');
-const ErrorResponse = require('../utils/ErrorResponse');
-const Section = require('../models/Section');
-const SubSection = require('../models/SubSection');
-const CourseProgress = require('../models/CourseProgress');
-const dotenv=require("dotenv").config();
+const Course = require("../models/Course");
+const Category = require("../models/Category");
+const User = require("../models/User");
+const cloudUploader = require("../utils/cloudUploader");
+const clgDev = require("../utils/clgDev");
+const ErrorResponse = require("../utils/ErrorResponse");
+const Section = require("../models/Section");
+const SubSection = require("../models/SubSection");
+const CourseProgress = require("../models/CourseProgress");
+const dotenv = require("dotenv").config();
 // @desc      Get all published courses
 // @route     GET /api/v1/courses
 // @access    Public
 exports.getAllPublishedCourses = async (req, res, next) => {
   try {
-    const courses = await Course.find({ status: 'Published' }).populate('instructor').populate('category').exec();
+    const courses = await Course.find({ status: "Published" })
+      .populate("instructor")
+      .populate("category")
+      .exec();
 
     return res.status(200).json({
       success: true,
@@ -21,7 +24,7 @@ exports.getAllPublishedCourses = async (req, res, next) => {
       data: courses,
     });
   } catch (err) {
-    next(new ErrorResponse('Failed to fetch all published courses', 500));
+    next(new ErrorResponse("Failed to fetch all published courses", 500));
   }
 };
 
@@ -32,24 +35,24 @@ exports.getCourse = async (req, res, next) => {
   try {
     const course = await Course.findById(req.params.courseId)
       .populate({
-        path: 'instructor',
+        path: "instructor",
         populate: {
-          path: 'profile',
+          path: "profile",
         },
       })
-      .populate('category')
-      .populate('reviews')
+      .populate("category")
+      .populate("reviews")
       .populate({
-        path: 'sections',
+        path: "sections",
         populate: {
-          path: 'subSections',
-          select: '-videoUrl',
+          path: "subSections",
+          select: "-videoUrl",
         },
       })
       .exec();
 
-    if (!course || course.status === 'Draft') {
-      return next(new ErrorResponse('No such course found', 404));
+    if (!course || course.status === "Draft") {
+      return next(new ErrorResponse("No such course found", 404));
     }
 
     return res.status(200).json({
@@ -58,7 +61,7 @@ exports.getCourse = async (req, res, next) => {
     });
   } catch (err) {
     console.log(err);
-    next(new ErrorResponse('Failed to fetching course', 500));
+    next(new ErrorResponse("Failed to fetching course", 500));
   }
 };
 
@@ -73,32 +76,32 @@ exports.getFullCourseDetails = async (req, res, next) => {
     const { courseId } = req.body;
 
     if (!courseId) {
-      return next(new Error('Invalid request', 404));
+      return next(new Error("Invalid request", 404));
     }
 
     const course = await Course.findById(courseId)
       .populate({
-        path: 'instructor',
+        path: "instructor",
         populate: {
-          path: 'profile',
+          path: "profile",
         },
       })
-      .populate('category')
-      .populate('reviews')
+      .populate("category")
+      .populate("reviews")
       .populate({
-        path: 'sections',
+        path: "sections",
         populate: {
-          path: 'subSections',
+          path: "subSections",
         },
       })
       .exec();
 
     if (!course) {
-      return next(new ErrorResponse('No such course found', 404));
+      return next(new ErrorResponse("No such course found", 404));
     }
 
     if (course.instructor._id.toString() !== instructorId) {
-      return next(new ErrorResponse('Unauthorized access', 401));
+      return next(new ErrorResponse("Unauthorized access", 401));
     }
 
     return res.status(200).json({
@@ -107,10 +110,9 @@ exports.getFullCourseDetails = async (req, res, next) => {
     });
   } catch (err) {
     console.log(err);
-    next(new ErrorResponse('Failed to fetching course', 500));
+    next(new ErrorResponse("Failed to fetching course", 500));
   }
 };
-
 
 // @desc      Create Course
 // @route     POST /api/v1/courses
@@ -120,37 +122,63 @@ exports.createCourse = async (req, res, next) => {
     const instructorId = req.user.id;
     const { title, description, whatYouWillLearn, price, category } = req.body;
     const tags = req.body?.tags ? JSON.parse(req.body?.tags) : null;
-    const instructions = req.body?.instructions ? JSON.parse(req.body?.instructions) : null;
+    const instructions = req.body?.instructions
+      ? JSON.parse(req.body?.instructions)
+      : null;
     const thumbnail = req.files?.thumbnail;
 
-    if (!(instructorId && title && description && whatYouWillLearn && price && category && tags && instructions && thumbnail)) {
-      return next(new ErrorResponse('All fields are mandatory', 404));
+    if (
+      !(
+        instructorId &&
+        title &&
+        description &&
+        whatYouWillLearn &&
+        price &&
+        category &&
+        tags &&
+        instructions &&
+        thumbnail
+      )
+    ) {
+      return next(new ErrorResponse("All fields are mandatory", 404));
     }
 
     // check if category is a valid category
     const categoryDetails = await Category.findById(category);
     if (!categoryDetails) {
-      return next(new ErrorResponse('No such category found', 404));
+      return next(new ErrorResponse("No such category found", 404));
     }
 
     // validate and upload thumbnail
     if (thumbnail.size > process.env.THUMBNAIL_MAX_SIZE) {
-      return next(new ErrorResponse(`Please upload a image less than ${process.env.THUMBNAIL_MAX_SIZE / 1024} KB`, 400));
+      return next(
+        new ErrorResponse(
+          `Please upload a image less than ${
+            process.env.THUMBNAIL_MAX_SIZE / 1024
+          } KB`,
+          400
+        )
+      );
     }
 
-    if (!thumbnail.mimetype.startsWith('image')) {
-      return next(new ErrorResponse('Please upload a image file', 400));
+    if (!thumbnail.mimetype.startsWith("image")) {
+      return next(new ErrorResponse("Please upload a image file", 400));
     }
 
-    const allowedFileType = ['jpeg', 'jpg', 'png'];
-    const thumbnailType = thumbnail.mimetype.split('/')[1];
+    const allowedFileType = ["jpeg", "jpg", "png"];
+    const thumbnailType = thumbnail.mimetype.split("/")[1];
 
     if (!allowedFileType.includes(thumbnailType)) {
-      return next(new ErrorResponse('Please upload a valid image file', 400));
+      return next(new ErrorResponse("Please upload a valid image file", 400));
     }
 
     thumbnail.name = `thumbnail_${instructorId}_${Date.now()}`;
-    const image = await cloudUploader(thumbnail, process.env.THUMBNAIL_FOLDER_NAME, 200, 80);
+    const image = await cloudUploader(
+      thumbnail,
+      process.env.THUMBNAIL_FOLDER_NAME,
+      200,
+      80
+    );
 
     // create course
     const courseDetails = await Course.create({
@@ -185,17 +213,17 @@ exports.createCourse = async (req, res, next) => {
 
     const courseFullDetails = await Course.findById(courseDetails._id)
       .populate({
-        path: 'instructor',
+        path: "instructor",
         populate: {
-          path: 'profile',
+          path: "profile",
         },
       })
-      .populate('category')
-      .populate('reviews')
+      .populate("category")
+      .populate("reviews")
       .populate({
-        path: 'sections',
+        path: "sections",
         populate: {
-          path: 'subSections',
+          path: "subSections",
         },
       })
       .exec();
@@ -205,7 +233,7 @@ exports.createCourse = async (req, res, next) => {
       data: courseFullDetails,
     });
   } catch (err) {
-    next(new ErrorResponse('Failed to create course', 500));
+    next(new ErrorResponse("Failed to create course", 500));
   }
 };
 
@@ -220,50 +248,63 @@ exports.editCourse = async (req, res, next) => {
     const updates = req.body;
     const thumbnail = req.files?.thumbnail;
 
-    if (updates.hasOwnProperty('thumbnail') && !thumbnail) {
-      return next(new Error('Please select a thumbnail', 404));
+    if (updates.hasOwnProperty("thumbnail") && !thumbnail) {
+      return next(new Error("Please select a thumbnail", 404));
     }
 
     if (!courseId) {
-      return next(new Error('Invalid request', 404));
+      return next(new Error("Invalid request", 404));
     }
 
     const course = await Course.findById(courseId);
 
     if (!course) {
-      return next(new ErrorResponse('No such course found', 404));
+      return next(new ErrorResponse("No such course found", 404));
     }
 
     if (course.instructor._id.toString() !== instructorId) {
-      return next(new ErrorResponse('Unauthorized access', 401));
+      return next(new ErrorResponse("Unauthorized access", 401));
     }
 
     /////////////////////// ** Course Thumbnail ** ///////////////////////
     if (thumbnail) {
       // validate and upload thumbnail
       if (thumbnail.size > process.env.THUMBNAIL_MAX_SIZE) {
-        return next(new ErrorResponse(`Please upload a image less than ${process.env.THUMBNAIL_MAX_SIZE / 1024} KB`, 400));
+        return next(
+          new ErrorResponse(
+            `Please upload a image less than ${
+              process.env.THUMBNAIL_MAX_SIZE / 1024
+            } KB`,
+            400
+          )
+        );
       }
 
-      if (!thumbnail.mimetype.startsWith('image')) {
-        return next(new ErrorResponse('Please upload a image file', 400));
+      if (!thumbnail.mimetype.startsWith("image")) {
+        return next(new ErrorResponse("Please upload a image file", 400));
       }
 
-      const allowedFileType = ['jpeg', 'jpg'];
-      const thumbnailType = thumbnail.mimetype.split('/')[1];
+      const allowedFileType = ["jpeg", "jpg"];
+      const thumbnailType = thumbnail.mimetype.split("/")[1];
 
       if (!allowedFileType.includes(thumbnailType)) {
-        return next(new ErrorResponse('Please upload a valid image file', 400));
+        return next(new ErrorResponse("Please upload a valid image file", 400));
       }
 
       thumbnail.name = `thumbnail_${instructorId}_${Date.now()}`;
-      const image = await cloudUploader(thumbnail, process.env.THUMBNAIL_FOLDER_NAME, 200, 80);
+      const image = await cloudUploader(
+        thumbnail,
+        process.env.THUMBNAIL_FOLDER_NAME,
+        200,
+        80
+      );
       course.thumbnail = image.secure_url;
     }
     /////////////////////////// ***** ///////////////////////////
 
     if (updates.tags) updates.tags = JSON.parse(updates.tags);
-    if (updates.instructions) updates.instructions = JSON.parse(updates.instructions);
+    if (updates.instructions)
+      updates.instructions = JSON.parse(updates.instructions);
 
     // Update only properties that are present in the request body (and not inherited in updates)
     for (const key in updates) {
@@ -276,17 +317,17 @@ exports.editCourse = async (req, res, next) => {
 
     const updatedCourse = await Course.findById(courseId)
       .populate({
-        path: 'instructor',
+        path: "instructor",
         populate: {
-          path: 'profile',
+          path: "profile",
         },
       })
-      .populate('category')
-      .populate('reviews')
+      .populate("category")
+      .populate("reviews")
       .populate({
-        path: 'sections',
+        path: "sections",
         populate: {
-          path: 'subSections',
+          path: "subSections",
         },
       })
       .exec();
@@ -296,7 +337,7 @@ exports.editCourse = async (req, res, next) => {
       data: updatedCourse,
     });
   } catch (err) {
-    next(new ErrorResponse('Failed to edit course', 500));
+    next(new ErrorResponse("Failed to edit course", 500));
   }
 };
 
@@ -309,21 +350,26 @@ exports.deleteCourse = async (req, res, next) => {
     const { courseId } = req.body;
 
     if (!courseId) {
-      return next(new Error('Invalid request', 404));
+      return next(new Error("Invalid request", 404));
     }
 
     const course = await Course.findById(courseId);
 
     if (!course) {
-      return next(new ErrorResponse('No such course found', 404));
+      return next(new ErrorResponse("No such course found", 404));
     }
 
     if (course.instructor._id.toString() !== instructorId) {
-      return next(new ErrorResponse('Unauthorized access', 401));
+      return next(new ErrorResponse("Unauthorized access", 401));
     }
 
     if (course.studentsEnrolled.length !== 0) {
-      return next(new ErrorResponse("Can't delete course, some students are enrolled", 404));
+      return next(
+        new ErrorResponse(
+          "Can't delete course, some students are enrolled",
+          404
+        )
+      );
     }
 
     // Delete sections and sub-sections
@@ -349,7 +395,7 @@ exports.deleteCourse = async (req, res, next) => {
       data: course,
     });
   } catch (err) {
-    next(new ErrorResponse('Failed to delete course', 500));
+    next(new ErrorResponse("Failed to delete course", 500));
   }
 };
 
@@ -363,35 +409,35 @@ exports.getEnrolledCourseData = async (req, res, next) => {
     const userId = req.user.id;
 
     if (!courseId) {
-      return next(new Error('Invalid request', 404));
+      return next(new Error("Invalid request", 404));
     }
 
     const course = await Course.findOne({
       _id: courseId,
-      status: 'Published',
+      status: "Published",
     })
       .populate({
-        path: 'instructor',
+        path: "instructor",
         populate: {
-          path: 'profile',
+          path: "profile",
         },
       })
-      .populate('category')
-      .populate('reviews')
+      .populate("category")
+      .populate("reviews")
       .populate({
-        path: 'sections',
+        path: "sections",
         populate: {
-          path: 'subSections',
+          path: "subSections",
         },
       })
       .exec();
 
     if (!course) {
-      return next(new ErrorResponse('No such course found', 404));
+      return next(new ErrorResponse("No such course found", 404));
     }
 
     if (!course.studentsEnrolled.includes(userId)) {
-      return next(new ErrorResponse('Student is not enrolled in Course', 401));
+      return next(new ErrorResponse("Student is not enrolled in Course", 401));
     }
 
     const courseProgress = await CourseProgress.findOne({
@@ -400,7 +446,7 @@ exports.getEnrolledCourseData = async (req, res, next) => {
     });
 
     if (!courseProgress) {
-      return next(new ErrorResponse('No such course progress found', 404));
+      return next(new ErrorResponse("No such course progress found", 404));
     }
 
     let totalNoOfVideos = 0;
@@ -417,6 +463,6 @@ exports.getEnrolledCourseData = async (req, res, next) => {
       },
     });
   } catch (err) {
-    next(new ErrorResponse('Failed to fetch enrolled course data', 500));
+    next(new ErrorResponse("Failed to fetch enrolled course data", 500));
   }
 };

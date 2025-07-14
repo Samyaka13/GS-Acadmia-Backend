@@ -1,9 +1,9 @@
-const nodemailer = require('nodemailer');
-const clgDev = require('./clgDev');
+const nodemailer = require("nodemailer");
+const clgDev = require("./clgDev");
 
 const emailSender = async (toEmail, subject, body) => {
   try {
-    // For real purpose 
+    // For real purpose
     const transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       auth: {
