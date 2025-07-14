@@ -12,7 +12,8 @@
 >
 > #### Backend GitHub Repo - [Click Here](https://github.com/Samyaka13/GS-Acadmia-Backend)
 >
-> #### Frontend Live at - [https://gsacademia-parth-lahotis-projects.vercel.app/](https://gsacademia-parth-lahotis-projects.vercel.app/)
+> #### Frontend Live at - [Click Here](https://gs-acadmia-frontend.vercel.app/)
+
 >
 > #### Backend Live at - [Click Here](https://gs-acadmia-backend.onrender.com/)
 
